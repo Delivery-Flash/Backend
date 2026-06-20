@@ -1,98 +1,233 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# DeliveryFlash - Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST para la plataforma DeliveryFlash, construida con **NestJS**, **Prisma ORM** y **PostgreSQL**.
+---
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Stack tecnológico
 
-## Description
+| Capa | Tecnología |
+|---|---|
+| Runtime | Node.js (v18+) |
+| Framework backend | NestJS (sobre Express) |
+| ORM | Prisma 6.x |
+| Base de datos | PostgreSQL |
+| Validaciones | class-validator / class-transformer |
+| Hash de contraseñas | bcrypt |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Instalacion de PRISMA version 6
 
-## Project setup
+> ```bash
+> npm install prisma@6 @prisma/client@6
+> ```
 
-```bash
-$ npm install
-```
+---
 
-## Compile and run the project
+## Requisitos previos
 
-```bash
-# development
-$ npm run start
+Antes de clonar el proyecto, verificar tener instalado:
 
-# watch mode
-$ npm run start:dev
+- **Node.js** v18 o superior → verifica con `node -v`
+- **npm** (viene con Node.js) → verifica con `npm -v`
+- **PostgreSQL** corriendo (local o vía Docker)
+- **Git**
 
-# production mode
-$ npm run start:prod
-```
+- **Docker** y **Docker Compose** (para levantar PostgreSQL sin instalarlo directo en la máquina)
 
-## Run tests
+---
+
+## Instalación del backend desde cero
 
 ```bash
-# unit tests
-$ npm run test
+# Instalar dependencias
+npm install
 
-# e2e tests
-$ npm run test:e2e
+# 3. Configurar variables de entorno (ver sección siguiente)
+# editar .env con tus credenciales reales
 
-# test coverage
-$ npm run test:cov
+# 5. Aplicar migraciones
+npx prisma migrate dev
+
+# 6. Levantar el servidor en modo desarrollo
+npm run start:dev
 ```
 
-## Deployment
+Si todo salió bien, la API está corriendo en `http://localhost:3000`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+---
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Variables de entorno
+
+Crear un archivo `.env` en la raíz del proyecto (mismo nivel que `package.json`), basado en este ejemplo:
+
+```env
+# Conexión a PostgreSQL
+DATABASE_URL="postgresql://USUARIO:CONTRASEÑA@localhost:5432/delivery_flash?schema=public"
+
+# Puerto del servidor (opcional, por defecto 3000)
+PORT=3000
+```
+
+| Variable | Descripción |
+|---|---|
+| `DATABASE_URL` | Cadena de conexión completa a PostgreSQL. Prisma la lee automáticamente |
+| `PORT` | Puerto donde corre el servidor NestJS |
+
+---
+
+## Base de datos
+
+### PostgreSQL con Docker
+
+Crea un archivo `docker-compose.yml`:
+
+```yaml
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: usuario
+      POSTGRES_PASSWORD: usuario
+      POSTGRES_DB: delivery_flash
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+Levantarlo:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+docker compose up -d
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Verificar que esté corriendo:
 
-## Resources
+```bash
+docker ps
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+Detenerlo (sin borrar datos):
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+docker compose down
+```
 
-## Support
+Detenerlo y borrar todos los datos (reset completo):
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+docker compose down -v
+```
 
-## Stay in touch
+## Levantar el proyecto
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+npm run start:dev
+```
 
-## License
+Modo desarrollo, con recarga automática al guardar cambios. La API queda disponible en:
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```
+http://localhost:3000
+```
+
+Otros modos disponibles:
+
+```bash
+npm run start        # modo normal, sin watch
+```
+
+---
+
+
+## Módulos implementados
+
+### `auth` — Autenticación y registro
+
+Maneja todo lo relacionado a identidad y acceso: registro de usuarios, y en el futuro, login.
+
+**Modelo de datos (`User`):**
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `id` | Int | autoincremental, llave primaria |
+| `first_name` | String | 3-100 caracteres |
+| `last_name` | String | 3-100 caracteres |
+| `age` | Int | entre 13 y 120 |
+| `email` | String | único, formato válido, 5-30 caracteres |
+| `password` | String | hasheado con bcrypt antes de guardar, nunca se devuelve en las respuestas |
+| `role` | Enum (`CLIENT`, `RIDER`, `ADMIN`) | por defecto `CLIENT` |
+| `createdAt` / `updatedAt` | DateTime | automáticos |
+
+
+---
+
+## Endpoints disponibles
+
+### `POST /auth/register/client`
+
+Registra un nuevo usuario con rol `CLIENTE`.
+
+**Body (JSON):**
+
+```json
+{
+  "first_name": "Juan Pérez",
+  "last_name": "Juan Pérez",
+  "age": 22,
+  "email": "juan@test.com",
+  "password": "abc12345"
+}
+```
+
+**Respuesta exitosa — `201 Created`:**
+
+```json
+{
+  "id": 1,
+  "first_name": "Juan Pérez",
+  "last_name": "Juan Pérez",
+  "age": 22,
+  "email": "juan@test.com",
+  "role": "CLIENTE",
+  "createdAt": "2026-06-20T20:40:18.000Z"
+}
+```
+
+
+## Comandos útiles
+
+### Proyecto / NestJS
+
+| Comando | Qué hace |
+|---|---|
+| `npm run start:dev` | Levanta el servidor en modo desarrollo (hot reload) |
+| `npm run build` | Compila el proyecto a `/dist` |
+| `nest generate module nombre` | Genera un módulo nuevo |
+| `nest generate controller nombre` | Genera un controller nuevo |
+| `nest generate service nombre` | Genera un service nuevo |
+| `nest generate resource nombre` | Genera CRUD completo (controller + service + module + DTOs) |
+
+### Prisma
+
+| Comando | Qué hace |
+|---|---|
+| `npx prisma migrate dev --name nombre_cambio` | Crea y aplica una nueva migración tras modificar el schema |
+| `npx prisma migrate reset` | Borra y recrea la base de datos desde cero (solo desarrollo, borra todos los datos) |
+| `npx prisma generate` | Regenera el cliente de Prisma tras cambios en el schema |
+| `npx prisma studio` | Abre interfaz visual para ver/editar datos |
+| `npx prisma --version` | Verifica la versión instalada |
+
+### Docker
+
+| Comando | Qué hace |
+|---|---|
+| `docker compose up -d` | Levanta los contenedores en segundo plano |
+| `docker compose down` | Detiene los contenedores (conserva los datos) |
+| `docker compose down -v` | Detiene y borra los datos (reset completo) |
+| `docker ps` | Lista contenedores activos |
+
+---
