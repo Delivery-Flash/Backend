@@ -17,6 +17,13 @@ enum Role {
   ADMIN
 }
 
+//Estados de orden
+enum OrderStatus {
+  AVAILABLE
+  ACCEPTED
+  DELIVERED
+}
+
 model User {
   id Int @id @default(autoincrement())
   first_name String
@@ -25,5 +32,37 @@ model User {
   email String @unique
   password String
   role Role @default(CLIENT)
+  vehicle String?
+  createdAt DateTime @default(now())
+
+  clientOrders Order[] @relation("ClientOrders")
+  riderOrders  Order[] @relation("RiderOrders")
+}
+
+
+
+//Modelos para el manejo de ordenes
+model Order {
+  id          Int         @id @default(autoincrement())
+  origin      String
+  destination String
+  description String?
+  price       Float
+  zone        String      @default("ZONA_1")
+  status      OrderStatus @default(AVAILABLE)
+  clientId    Int
+  client      User        @relation("ClientOrders", fields: [clientId], references: [id])
+  riderId     Int?
+  rider       User?       @relation("RiderOrders", fields: [riderId], references: [id])
+  rating      Rating?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Rating {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  stars     Int
   createdAt DateTime @default(now())
 }
