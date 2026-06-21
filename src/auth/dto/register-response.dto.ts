@@ -5,5 +5,6 @@ export class AuthResponseDto {
     age!: number;
     email!: string;
     role!: string;
+    vehicle?: string | null;
     createdAt!: Date;
 }
