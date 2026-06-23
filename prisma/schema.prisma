@@ -17,11 +17,9 @@ enum Role {
 }
 
 enum OrderStatus {
-  PENDIENTE
-  ACEPTADO
-  EN_CAMINO
-  ENTREGADO
-  CANCELADO
+  AVAILABLE
+  ACCEPTED
+  DELIVERED
 }
 
 enum VehicleType {
@@ -41,20 +39,23 @@ enum NotifType {
 }
 
 model User {
-  id            Int           @id @default(autoincrement())
-  first_name    String
-  last_name     String
-  age           Int?
-  email         String        @unique
-  password      String
-  role          Role          @default(CLIENT)
+  id Int @id @default(autoincrement())
+  first_name String
+  last_name String
+  age Int?
+  email String @unique
+  password String
+  role Role @default(CLIENT)
+  
   profile_photo String?
-  is_active     Boolean       @default(true)
-  createdAt     DateTime      @default(now()) @db.Timestamp(3)
+  is_active Boolean @default(true)
+  
+  createdAt DateTime @default(now()) @db.Timestamp(3)
 
   riderProfile  RiderProfile?
-  ordersAsClient Order[]       @relation("ClientOrders")
-  ordersAsRider  Order[]       @relation("RiderOrders")
+  
+  clientOrders Order[]       @relation("ClientOrders")
+  riderOrders  Order[]       @relation("RiderOrders")
   ratingsGiven   Rating[]      @relation("ClientRatings")
   ratingsReceived Rating[]     @relation("RiderRatings")
   earnings       RiderEarnings[]
@@ -64,16 +65,15 @@ model User {
 model RiderProfile {
   id            Int         @id @default(autoincrement())
   user_id       Int         @unique
-  dpi_photo     String
-  vehicle_photo String
+  
   license_plate String
-  vehicle_type  VehicleType @default(MOTO)
+  vehicle_type VehicleType @default(MOTO)
   vehicle_model String?
-  zone          String      @default("ZONA_1")
-  is_verified   Boolean     @default(false)
-  createdAt     DateTime    @default(now()) @db.Timestamp(3)
+  zone String @default("ZONA_1")
+  is_verified Boolean     @default(false)
+  createdAt DateTime    @default(now()) @db.Timestamp(3)
 
-  user          User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Order {
@@ -81,26 +81,22 @@ model Order {
   client_id           Int
   rider_id            Int?
   origin      String
-  origin_lat          Decimal?     @db.Decimal(10, 7)
-  origin_lng          Decimal?     @db.Decimal(10, 7)
   destination String
-  destination_lat     Decimal?     @db.Decimal(10, 7)
-  destination_lng     Decimal?     @db.Decimal(10, 7)
-  package_description String
+  description String
+  zone                String       @default("ZONA_1")
+  status              OrderStatus  @default(AVAILABLE)
+  
   distance_km         Decimal?     @db.Decimal(8, 2)
   suggested_price     Decimal?     @db.Decimal(10, 2)
   base_fare           Decimal?     @db.Decimal(10, 2)
   final_price         Decimal?     @db.Decimal(10, 2)
-  zone                String       @default("ZONA_1")
-  status              OrderStatus  @default(PENDIENTE)
-  accepted_at         DateTime?    @db.Timestamp(3)
-  picked_up_at        DateTime?    @db.Timestamp(3)
+  
   createdAt           DateTime     @default(now()) @db.Timestamp(3)
 
-  client        User          @relation("ClientOrders", fields: [client_id], references: [id])
-  rider         User?         @relation("RiderOrders", fields: [rider_id], references: [id])
-  rating        Rating?
-  earnings      RiderEarnings?
+  client User @relation("ClientOrders", fields: [client_id], references: [id])
+  rider User? @relation("RiderOrders", fields: [rider_id], references: [id])
+  rating Rating?
+  earnings RiderEarnings?
   notifications Notification[]
 }
 
