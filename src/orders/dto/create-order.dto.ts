@@ -14,7 +14,16 @@ export class CreateOrderDto {
   description?: string;
 
   @IsNumber({}, { message: 'La distancia debe ser un número' })
-
   @Min(0.1, { message: 'La distancia debe ser mayor a 0' })
   distanceKm!: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'El precio sugerido debe ser un número' })
+  @Min(0, { message: 'El precio sugerido no puede ser negativo' })
+  suggested_price?: number;
+
+  @IsOptional()
+  @IsString({ message: 'La zona debe ser texto' })
+  zone?: string;
+
 }

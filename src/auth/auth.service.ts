@@ -20,6 +20,9 @@ export class AuthService {
               private jwtService: JwtService, 
   ) {}
 
+  /**
+   * REGISTRO DE CLIENTE
+  */
   async registerClient(dto: RegisterDto): Promise<AuthResponseDto> {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -62,8 +65,11 @@ export class AuthService {
     }
   }
 
-
-  async registerRider(dto: RegisterRiderDto): Promise<AuthResponseDto> {
+  /**
+   * REGISTRO DE RIDER
+   */
+  
+  async registerRider(dto: RegisterRiderDto): Promise<any> {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -75,27 +81,42 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
     try {
+      // Creacion del usuario
       const user = await this.prisma.user.create({
         data: {
           first_name: dto.first_name,
-          last_name: dto.last_name,
-          age: dto.age,
-          email: dto.email,
-          password: hashedPassword,
-          role: 'RIDER',
-          vehicle: dto.vehicle,
+          last_name:  dto.last_name,
+          age:        dto.age,
+          email:      dto.email,
+          password:   hashedPassword,
+          role:       'RIDER',
+        },
+      });
+
+      // Creacion del perfil del rider
+      const riderProfile = await this.prisma.riderProfile.create({
+        data: {
+          user_id:       user.id,
+          license_plate: dto.license_plate,
+          vehicle_type:  dto.vehicle_type,
+          vehicle_model: dto.vehicle_model,
+          zone:          dto.zone ?? 'ZONA_1',
         },
       });
 
       return {
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        age: user.age,
-        email: user.email,
-        role: user.role,
-        vehicle: user.vehicle,
-        createdAt: user.createdAt,
+        id:            user.id,
+        first_name:    user.first_name,
+        last_name:     user.last_name,
+        age:           user.age,
+        email:         user.email,
+        role:          user.role,
+        license_plate: riderProfile.license_plate,
+        vehicle_type:  riderProfile.vehicle_type,
+        vehicle_model: riderProfile.vehicle_model,
+        zone:          riderProfile.zone,
+        is_verified:   riderProfile.is_verified,
+        createdAt:     user.createdAt,
       };
     } catch (error) {
       if (
@@ -104,14 +125,13 @@ export class AuthService {
       ) {
         throw new ConflictException('Ya hay una cuenta con este correo');
       }
-      throw new InternalServerErrorException('Error al registrar el usuario');
+      throw new InternalServerErrorException('Error al registrar el rider');
     }
   }
-  
 
-
-
-
+  /**
+   * INICIO DE SESIÓN
+   */
   async login(dto: LoginDto): Promise<LoginResponseDto> {
     
     const user = await this.prisma.user.findUnique({
@@ -151,7 +171,11 @@ export class AuthService {
     };
   }
 
-    async getProfile(userId: number) {
+  /**
+   * OBTENER PERFIL DEL USUARIO
+   */
+
+  async getProfile(userId: number) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
@@ -165,9 +189,7 @@ export class AuthService {
       age: user.age,
       email: user.email,
       role: user.role,
-      vehicle: user.vehicle,
       createdAt: user.createdAt,
     };
   }
-
 }

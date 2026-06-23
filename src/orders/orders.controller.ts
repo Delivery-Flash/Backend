@@ -111,6 +111,6 @@ export class OrdersController {
     if (req.user.role !== 'CLIENT') {
       throw new ForbiddenException('Solo los clientes califican el servicio');
     }
-    return this.ordersService.rate(id, req.user.userId, dto.stars);
+    return this.ordersService.rate(id, req.user.userId, dto.stars, dto.comment);
   }
 }
