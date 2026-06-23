@@ -1,5 +1,4 @@
-import { ConflictException, Injectable, InternalServerErrorException, UnauthorizedException }
-from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -190,6 +189,19 @@ export class AuthService {
       email: user.email,
       role: user.role,
       createdAt: user.createdAt,
+      profile_photo: user.profile_photo,
     };
+  }
+
+  async updateProfilePhoto(userId: number, profile_photo: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { profile_photo },
+    });
+
+    return { id: updated.id, profile_photo_url: updated.profile_photo };
   }
 }

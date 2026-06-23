@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards, Patch } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterRiderDto } from './dto/register-rider.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdatePhotoDto } from './dto/update-photo.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 
 interface RequestWithUser extends Request {
@@ -38,6 +39,12 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     getProfile(@Req() req: RequestWithUser) {
         return this.authService.getProfile(req.user.userId);
+    }
+
+    @Patch('photo')
+    @UseGuards(JwtAuthGuard)
+    updatePhoto(@Req() req: RequestWithUser, @Body() dto: UpdatePhotoDto) {
+        return this.authService.updateProfilePhoto(req.user.userId, dto.profile_photo);
     }
 
 }
