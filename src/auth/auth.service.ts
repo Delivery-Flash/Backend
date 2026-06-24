@@ -204,4 +204,31 @@ export class AuthService {
 
     return { id: updated.id, profile_photo_url: updated.profile_photo };
   }
+
+  // este metodo sirve para traer todo el perfil del rider
+  async getRiderProfile(userId: number) {
+    const riderProfile = await this.prisma.riderProfile.findUnique({
+      where: { user_id: userId },
+      include: { user: true },
+    });
+
+    if (!riderProfile) {
+      throw new NotFoundException('Perfil de rider no encontrado');
+    }
+
+    return {
+      id: riderProfile.user.id,
+      first_name: riderProfile.user.first_name,
+      last_name: riderProfile.user.last_name,
+      age: riderProfile.user.age,
+      email: riderProfile.user.email,
+      role: riderProfile.user.role,
+      license_plate: riderProfile.license_plate,
+      vehicle_type: riderProfile.vehicle_type,
+      vehicle_model: riderProfile.vehicle_model,
+      zone: riderProfile.zone,
+      is_verified: riderProfile.is_verified,
+      createdAt: riderProfile.user.createdAt,
+    };
+  }
 }

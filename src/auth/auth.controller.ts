@@ -47,4 +47,10 @@ export class AuthController {
         return this.authService.updateProfilePhoto(req.user.userId, dto.profile_photo);
     }
 
+    @Get('rider/profile')
+    @UseGuards(JwtAuthGuard)
+    getRiderProfile(@Req() req: RequestWithUser) {
+        return this.authService.getRiderProfile(req.user.userId);
+    }
+
 }
