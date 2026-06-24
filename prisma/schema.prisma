@@ -1,14 +1,13 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 // Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -17,13 +16,127 @@ enum Role {
   ADMIN
 }
 
+enum OrderStatus {
+  AVAILABLE
+  ACCEPTED
+  DELIVERED
+}
+
+enum VehicleType {
+  MOTO
+  BICICLETA
+  CARRO
+  A_PIE
+}
+
+enum NotifType {
+  PEDIDO_CREADO
+  PEDIDO_ACEPTADO
+  EN_CAMINO
+  ENTREGADO
+  CALIFICACION_RECIBIDA
+  PAGO_PROCESADO
+}
+
 model User {
   id Int @id @default(autoincrement())
   first_name String
   last_name String
-  age Int
+  age Int?
   email String @unique
   password String
   role Role @default(CLIENT)
-  createdAt DateTime @default(now())
+  
+  profile_photo String?
+  is_active Boolean @default(true)
+  
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  riderProfile  RiderProfile?
+  
+  clientOrders Order[]       @relation("ClientOrders")
+  riderOrders  Order[]       @relation("RiderOrders")
+  ratingsGiven   Rating[]      @relation("ClientRatings")
+  ratingsReceived Rating[]     @relation("RiderRatings")
+  earnings       RiderEarnings[]
+  notifications  Notification[]
+}
+
+model RiderProfile {
+  id            Int         @id @default(autoincrement())
+  user_id       Int         @unique
+  
+  license_plate String
+  vehicle_type VehicleType @default(MOTO)
+  vehicle_model String?
+  zone String @default("ZONA_1")
+  is_verified Boolean     @default(false)
+  createdAt DateTime    @default(now()) @db.Timestamp(3)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id                  Int          @id @default(autoincrement())
+  client_id           Int
+  rider_id            Int?
+  origin      String
+  destination String
+  description String
+  zone                String       @default("ZONA_1")
+  status              OrderStatus  @default(AVAILABLE)
+  
+  distance_km         Decimal?     @db.Decimal(8, 2)
+  suggested_price     Decimal?     @db.Decimal(10, 2)
+  base_fare           Decimal?     @db.Decimal(10, 2)
+  final_price         Decimal?     @db.Decimal(10, 2)
+  
+  createdAt           DateTime     @default(now()) @db.Timestamp(3)
+
+  client User @relation("ClientOrders", fields: [client_id], references: [id])
+  rider User? @relation("RiderOrders", fields: [rider_id], references: [id])
+  rating Rating?
+  earnings RiderEarnings?
+  notifications Notification[]
+}
+
+model Rating {
+  id          Int      @id @default(autoincrement())
+  order_id    Int      @unique
+  client_id   Int
+  rider_id    Int
+  stars       Int
+  comment     String?
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+
+  order       Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  client      User     @relation("ClientRatings", fields: [client_id], references: [id])
+  rider       User     @relation("RiderRatings", fields: [rider_id], references: [id])
+}
+
+model RiderEarnings {
+  id           Int      @id @default(autoincrement())
+  rider_id     Int
+  order_id     Int      @unique
+  gross_amount Decimal  @db.Decimal(10, 2)
+  platform_fee Decimal  @default(0) @db.Decimal(10, 2)
+  net_amount   Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now()) @db.Timestamp(3)
+
+  rider        User     @relation(fields: [rider_id], references: [id], onDelete: Cascade)
+  order        Order    @relation(fields: [order_id], references: [id])
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  user_id   Int
+  order_id  Int?
+  type      NotifType
+  title     String
+  body      String
+  is_read   Boolean   @default(false)
+  createdAt DateTime  @default(now()) @db.Timestamp(3)
+
+  user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  order     Order?    @relation(fields: [order_id], references: [id])
 }

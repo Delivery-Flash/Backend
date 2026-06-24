@@ -9,6 +9,8 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { JwtPd } from './interfaces/JwtPd.interface';
+import { RegisterRiderDto } from './dto/register-rider.dto';
+
 const SALT_ROUNDS = 10;
 
 @Injectable()
@@ -18,6 +20,9 @@ export class AuthService {
               private jwtService: JwtService, 
   ) {}
 
+  /**
+   * REGISTRO DE CLIENTE
+  */
   async registerClient(dto: RegisterDto): Promise<AuthResponseDto> {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -60,6 +65,73 @@ export class AuthService {
     }
   }
 
+  /**
+   * REGISTRO DE RIDER
+   */
+  
+  async registerRider(dto: RegisterRiderDto): Promise<any> {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Ya existe una cuenta con este correo');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, SALT_ROUNDS);
+
+    try {
+      // Creacion del usuario
+      const user = await this.prisma.user.create({
+        data: {
+          first_name: dto.first_name,
+          last_name:  dto.last_name,
+          age:        dto.age,
+          email:      dto.email,
+          password:   hashedPassword,
+          role:       'RIDER',
+        },
+      });
+
+      // Creacion del perfil del rider
+      const riderProfile = await this.prisma.riderProfile.create({
+        data: {
+          user_id:       user.id,
+          license_plate: dto.license_plate,
+          vehicle_type:  dto.vehicle_type,
+          vehicle_model: dto.vehicle_model,
+          zone:          dto.zone ?? 'ZONA_1',
+        },
+      });
+
+      return {
+        id:            user.id,
+        first_name:    user.first_name,
+        last_name:     user.last_name,
+        age:           user.age,
+        email:         user.email,
+        role:          user.role,
+        license_plate: riderProfile.license_plate,
+        vehicle_type:  riderProfile.vehicle_type,
+        vehicle_model: riderProfile.vehicle_model,
+        zone:          riderProfile.zone,
+        is_verified:   riderProfile.is_verified,
+        createdAt:     user.createdAt,
+      };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Ya hay una cuenta con este correo');
+      }
+      throw new InternalServerErrorException('Error al registrar el rider');
+    }
+  }
+
+  /**
+   * INICIO DE SESIÓN
+   */
   async login(dto: LoginDto): Promise<LoginResponseDto> {
     
     const user = await this.prisma.user.findUnique({
@@ -96,6 +168,28 @@ export class AuthService {
         email: user.email,
         role: user.role,
       },
+    };
+  }
+
+  /**
+   * OBTENER PERFIL DEL USUARIO
+   */
+
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+
+    return {
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      age: user.age,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
     };
   }
 }
