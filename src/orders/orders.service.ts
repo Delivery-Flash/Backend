@@ -4,6 +4,8 @@ import { OrdersGateway } from './orders.gateway';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 const PRICE_PER_KM = 5;
+const PLATFORM_FEE = 0.15;
+
 
 @Injectable()
 export class OrdersService {
@@ -12,12 +14,18 @@ export class OrdersService {
     private gateway: OrdersGateway,
   ) {}
 
+  private notify(user_id: number, order_id: number, type: any, title: string, body: string) {
+    return this.prisma.notification.create({
+      data: { user_id, order_id, type, title, body },
+    });
+  }
+
   // POST /orders
-  create(clientId: number, dto: CreateOrderDto) {
+  async create(clientId: number, dto: CreateOrderDto) {
 
     const base_fare = dto.distanceKm * PRICE_PER_KM;
 
-    return this.prisma.order.create({
+    const order = await this.prisma.order.create({
       data: {
         origin:          dto.origin,
         destination:     dto.destination,
@@ -30,6 +38,19 @@ export class OrdersService {
       },
       include: { rating: true },
     });
+
+
+    // ACA SE ACTIVA LA NOTIFICACION
+    
+    await this.notify(
+      clientId,
+      order.id,
+      'PEDIDO_CREADO',
+      'Pedido creado',
+      `Tu pedido de ${dto.origin} a ${dto.destination} fue registrado.`,
+    );
+
+    return order;
   }
 
   // GET /orders/mine
@@ -99,6 +120,15 @@ export class OrdersService {
   }
 
   const order = await this.findOne(id);
+
+  await this.notify(
+      order!.client_id,
+      id,
+      'PEDIDO_ACEPTADO',
+      'Pedido aceptado',
+      'Un repartidor aceptó tu pedido y va en camino a recogerlo.',
+    );
+
   this.gateway.emitOrderUpdated(order!);
   return order;
 }
@@ -110,11 +140,47 @@ export class OrdersService {
     if (!order || order.rider_id !== riderId) {
       throw new ForbiddenException('No estás asignado a este pedido');
     }
+    if (order.status !== 'ACCEPTED') {
+      throw new ConflictException('El pedido no está en estado ACCEPTED');
+    }
 
     await this.prisma.order.update({
       where: { id },
-      data: { status: 'DELIVERED' },
+      data:  { status: 'DELIVERED' },
     });
+
+    // Calcular y registrar ganancias del rider
+    const gross = Number(order.final_price ?? order.base_fare ?? 0);
+    const fee   = Math.round(gross * PLATFORM_FEE * 100) / 100;
+    const net   = Math.round((gross - fee) * 100) / 100;
+
+    await this.prisma.riderEarnings.create({
+      data: {
+        rider_id:     riderId,
+        order_id:     id,
+        gross_amount: gross,
+        platform_fee: fee,
+        net_amount:   net,
+      },
+    });
+
+    // Notificar al cliente que su pedido fue entregado
+    await this.notify(
+      order.client_id,
+      id,
+      'ENTREGADO',
+      '¡Pedido entregado!',
+      'Tu paquete fue entregado. ¡Califica el servicio!',
+    );
+
+    // Notificar al rider sobre el pago
+    await this.notify(
+      riderId,
+      id,
+      'PAGO_PROCESADO',
+      'Pago procesado',
+      `Se registraron Q${net.toFixed(2)} en tus ganancias.`,
+    );
 
     const updated = await this.findOne(id);
     this.gateway.emitOrderUpdated(updated!);
